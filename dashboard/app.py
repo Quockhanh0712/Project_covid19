@@ -22,7 +22,6 @@ from scipy.stats import f_oneway
 from scipy.stats import kruskal
 
 
-# Tải dữ liệu từ file CSV hoặc Excel
 st.title("Phân Tích Tình Hình Dịch COVID-19")
 
 
@@ -32,8 +31,8 @@ def load_data():
     country_data = pd.read_csv(r'A:\UET-VNU\Project_covid19\Data\contries_data.csv') # dữ liệu  các quốc gia
     df_territory = pd.read_csv(r'A:\UET-VNU\Project_covid19\Data\country-codes.csv') # dữ liệu bản đồ thế giới
     continent_data = pd.read_csv(r'A:\UET-VNU\Project_covid19\Data\continent_data.csv') # dữ liệu châu lục
-    df_support = pd.read_csv(r'A:\UET-VNU\project2\Datacovid19\sp.csv') # dữ liệu hỗ trợ quốc gia
-    gdp1 = pd.read_csv(r'A:\UET-VNU\Project_covid19\Data\gdp1.csv') # dữ liệu gdp các nước quý 2 2020
+    df_support = pd.read_csv(r'A:\UET-VNU\Project_covid19\Data\support.csv') # dữ liệu hỗ trợ quốc gia
+    gdp1 = pd.read_csv(r'A:\UET-VNU\Project_covid19\Data\Q2_2020_gdp.csv') # dữ liệu gdp các nước quý 2 2020
     covid_data = pd.read_csv(r'A:\UET-VNU\Project_covid19\Data\contries_data.csv') # dữ liệu các quốc gia
     data_co2 = pd.read_csv(r"A:\UET-VNU\Project_covid19\Data\annual-co-emissions-by-region.csv") # dữ liệu co2
     travel = pd.read_csv(r'A:\UET-VNU\Project_covid19\Data\travel.csv') # dữ liệu chuyến đi
@@ -60,12 +59,9 @@ World_data['date'] = pd.to_datetime(World_data['date'])
 
 # Nội dung cho từng tab
 with tab1:
-   
     st.title("Home")
-
     # Hàng đầu tiên gồm 3 cột
     row1_col1, row1_col2, row1_col3 = st.columns(3)
-
     with row1_col1:
         # Tính tổng số ca nhiễm theo các châu lục
         df_grouped = country_data.groupby('continent').agg({
@@ -103,24 +99,18 @@ with tab1:
 
         st.plotly_chart(fig_deaths, use_container_width=True)
     with row1_col3:
-        # country_data = pd.read_csv(r'A:\UET-VNU\Covid19_KNK\Datacovid19\countries_data.csv')
-
         # Tổng số ca nhiễm toàn cầu
         world_total_cases = 775_000_000
-        # ... (mã khác)
+        
 
-# Xử lý NaN trước khi nhóm (chọn một trong những cách sau):
+        # Xử lý NaN trước khi nhóm :
         country_data = country_data.dropna(subset=['total_cases'])  # Loại bỏ các hàng có NaN
-# HOẶC
+
         country_data['total_cases'] = country_data['total_cases'].fillna(0) # Điền NaN bằng 0
 
         country_data = country_data.loc[country_data.groupby('location')['total_cases'].idxmax()]
-
-# ... (phần còn lại của mã)
-
         # Tính tỷ lệ total_case của từng quốc gia so với thế giới
         country_data['global_ratio'] = (country_data['total_cases'] / world_total_cases) * 100
-
         # Lấy top 20 quốc gia có total_cases cao nhất
         top_20_countries = country_data.nlargest(20, 'total_cases')
         st.dataframe(
@@ -155,25 +145,19 @@ with tab1:
     with row2_col2:
         # --Biểu đồ só ca tử vong theo thời gian
         World_data['date'] = pd.to_datetime(World_data['date'])
-        deaths_over_time = World_data.groupby('date')['new_deaths'].sum().reset_index()
-
-        
+        deaths_over_time = World_data.groupby('date')['new_deaths'].sum().reset_index()       
         fig = px.line(deaths_over_time,
                       x='date',
                       y='new_deaths',
                       title='Số Ca Tử Vong Mới Theo Thời Gian',
                       labels={'new_deaths': 'Số Ca Tử Vong Mới', 'date': 'Ngày'},
                       line_shape='linear')  
-        
         fig.update_traces(line=dict(color='red'))
-
-        
         st.plotly_chart(fig)
 
     with row2_col3:
         # -- Biều đồ Tương Quan ca nhiễm và hồi phục
         World_data["month"] = World_data["date"].dt.to_period("M")
-
         # Tính toán tổng quan theo tháng
         monthly_summary = World_data.groupby("month").agg(
             total_cases_start=("total_cases", "first"),
@@ -182,17 +166,14 @@ with tab1:
             total_deaths_end=("total_deaths", "last"),
             new_cases=("new_cases", "sum")
         ).reset_index()
-
         # Tính số ca hồi phục trong tháng
         monthly_summary["recovered_in_month"] = (
             (monthly_summary["total_cases_end"] - monthly_summary["total_deaths_end"]) -
             (monthly_summary["total_cases_start"] - monthly_summary["total_deaths_start"])
         )
-
         # Đảm bảo không có giá trị âm
         monthly_summary["recovered_in_month"] = monthly_summary["recovered_in_month"].clip(lower=0)
         monthly_summary["new_cases"] = monthly_summary["new_cases"].clip(lower=0)
-
         # Lọc các tháng đại diện cho quý
         quarters = ["01", "04", "07", "10"]
         monthly_summary["month_str"] = monthly_summary["month"].astype(str)
@@ -223,9 +204,6 @@ with tab1:
         )
         fig.update_layout(showlegend=False)
         st.plotly_chart(fig, use_container_width=True)
-
-    
-
 with tab2:
     st.header("Tổng quan về tình hình dịch COVID-19")
     # Các tùy chọn cho phần tổng quan
@@ -239,7 +217,6 @@ with tab2:
         ],
     )
     if sub_option == "Số ca nhiễm và tử vong theo thời gian":
-        # Đọc dữ liệu trực tiếp từ file CSV
         data = pd.read_csv(FILE_PATH)
         data['date'] = pd.to_datetime(data['date'], errors='coerce')  
         data = data.dropna(subset=['date'])  
@@ -283,7 +260,6 @@ with tab2:
             )
             fig_deaths.update_traces(line=dict(color='red'))  
             st.plotly_chart(fig_deaths,key='fig_deaths' )  
-
            # -- Biểu đồ số liều vaccine --
             st.subheader("Số Liều Vaccine Được Tiêm Theo Thời Gian")
             fig_vaccinations = px.line(
@@ -303,7 +279,6 @@ with tab2:
         # tiến hành merge các chỉ số iso code của df và map cho khớp 
         df_cases = country_data.groupby('iso_code')['total_cases'].max().reset_index()
         df_merged = df_cases.merge(df_territory, left_on='iso_code', right_on='ISO3166-1-Alpha-3', how='left')
-
         fig_cases = px.choropleth(df_merged,
                           locations='iso_code',
                           color='total_cases', 
@@ -333,9 +308,7 @@ with tab2:
             width=1200,
         )
         st.plotly_chart(fig_deaths)
-
-        # Bản đồ hỗ trợ của chính phủ trên toàn cầu
-
+        # -- Bản đồ hỗ trợ của chính phủ trên toàn cầu --
         gov_support = df_support.groupby('Code')['e1_income_support'].max().reset_index()
         df_merged = gov_support.merge(df_territory, left_on='Code', right_on='ISO3166-1-Alpha-3', how='left')
         fig_support = px.choropleth(df_merged,
@@ -544,10 +517,7 @@ with tab2:
                 st.plotly_chart(fig_vaccinations, use_container_width=True)
 
 with tab3:
-       
         st.subheader("Biểu Đồ Tương Quan Giữa các Chỉ số")
-
-
         fig = px.scatter(
             World_data,
             x='new_cases',
@@ -566,9 +536,7 @@ with tab3:
             xaxis=dict(title_font=dict(size=12), tickformat=".1f"),
             yaxis=dict(title_font=dict(size=12), tickformat=".1f")
             )
-
         st.plotly_chart(fig, use_container_width=True)    
-
         # -- biều đồ tương quan giữa ca hồi phục và ca nhiễm mới
         World_data["month"] = World_data["date"].dt.to_period("M")
 
@@ -595,12 +563,9 @@ with tab3:
         quarters = ["01", "04", "07", "10"]
         monthly_summary["month_str"] = monthly_summary["month"].astype(str)
         filtered_months = monthly_summary[monthly_summary["month_str"].str[-2:].isin(quarters)]
-
-        # Vẽ biểu đồ tương tác bằng Plotly
         st.subheader("Biểu Đồ Tương Tác Ca Nhiễm và Hồi Phục Theo Quý")
 
         fig = go.Figure()
-
         # Thêm dữ liệu "Ca Nhiễm Mới"
         fig.add_trace(go.Bar(
             x=filtered_months["month_str"],
@@ -632,13 +597,11 @@ with tab3:
         st.plotly_chart(fig, use_container_width=True)
 
 
-        st.subheader("So sánh biến thể Omicron và Delta")
-
-                
+        st.subheader("So sánh biến thể Omicron và Delta")                
         # Lọc dữ liệu cho biến chủng Delta (từ tháng 5/2021 đến tháng 12/2021)
         delta_wave = World_data[(World_data['date'] >= '2021-05-01') & (World_data['date'] <= '2021-12-31')]
 
-                # Lọc dữ liệu cho biến chủng Omicron (từ tháng 12/2021 đến giữa năm 2022)
+        # Lọc dữ liệu cho biến chủng Omicron (từ tháng 12/2021 đến giữa năm 2022)
         omicron_wave = World_data[(World_data['date'] >= '2021-12-01') & (World_data['date'] <= '2022-06-30')]
 
         # Tạo hai cột song song
@@ -700,17 +663,14 @@ with tab3:
 
         
 
-
+        # -- biểu đồ phân tích tiêm chủng ảnh hưởng đến ca nhiễm và tử vong
         st.subheader("Phân tích tiêm chủng toàn cầu")
         wc=pd.read_csv(FILE_PATH2)
         wc['date'] = pd.to_datetime(wc['date'])
-
         # Tính tổng số ca nhiễm và tổng số liều tiêm theo ngày
         time_vaccine_cases = wc.groupby('date').sum()
-
         # Tạo hai cột song song
         col1, col2 = st.columns(2)
-
         with col1:
         # Biểu đồ số ca tử vong mới và số liều tiêm
             fig1 = go.Figure()
